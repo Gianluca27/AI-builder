@@ -1,3 +1,43 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@theme {
+  --color-primary-50: #f5f7ff;
+  --color-primary-100: #ebefff;
+  --color-primary-200: #d6dfff;
+  --color-primary-300: #b3c2ff;
+  --color-primary-400: #8c9eff;
+  --color-primary-500: #667eea;
+  --color-primary-600: #5568d3;
+  --color-primary-700: #4451b8;
+  --color-primary-800: #343b94;
+  --color-primary-900: #2a3077;
+
+  --color-secondary-500: #764ba2;
+  --color-secondary-600: #653f8f;
+  --color-secondary-700: #55347a;
+
+  --animate-fade-in: fadeIn 0.5s ease-in;
+  --animate-slide-up: slideUp 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  0% {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
