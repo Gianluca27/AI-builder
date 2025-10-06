@@ -31,15 +31,50 @@ const userSchema = new mongoose.Schema(
       enum: ["user", "admin"],
       default: "user",
     },
+
+    // ============= SISTEMA DE BILLING CON PAYPAL =============
+
     plan: {
       type: String,
-      enum: ["free", "pro", "enterprise"],
+      enum: ["free", "basic", "pro", "enterprise"],
       default: "free",
     },
+
     credits: {
       type: Number,
-      default: 10, // Free plan gets 10 AI generations
+      default: 10,
     },
+
+    subscription: {
+      paypalSubscriptionId: String, // Subscription ID de PayPal
+      paypalPlanId: String, // Plan ID de PayPal
+      paypalPayerId: String, // Payer ID del usuario
+      status: {
+        type: String,
+        enum: ["ACTIVE", "CANCELLED", "SUSPENDED", "EXPIRED"],
+        default: null,
+      },
+      nextBillingTime: Date,
+      cancelAtPeriodEnd: Boolean,
+    },
+
+    usage: {
+      totalGenerations: { type: Number, default: 0 },
+      thisMonthGenerations: { type: Number, default: 0 },
+      lastResetDate: { type: Date, default: Date.now },
+      totalSpent: { type: Number, default: 0 },
+    },
+
+    purchases: [
+      {
+        amount: Number,
+        credits: Number,
+        date: { type: Date, default: Date.now },
+        paypalOrderId: String, // Order ID de PayPal para one-time
+        paypalCaptureId: String,
+      },
+    ],
+
     avatar: {
       type: String,
       default: null,
@@ -50,10 +85,6 @@ const userSchema = new mongoose.Schema(
     },
     resetPasswordToken: String,
     resetPasswordExpire: Date,
-    createdAt: {
-      type: Date,
-      default: Date.now,
-    },
     lastLogin: {
       type: Date,
       default: Date.now,
@@ -66,47 +97,107 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-// Virtual para proyectos del usuario
+// Virtual para proyectos
 userSchema.virtual("projects", {
   ref: "Project",
   localField: "_id",
   foreignField: "user",
 });
 
-// Hash password antes de guardar
+// Hash password
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) {
     return next();
   }
-
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
   next();
 });
 
-// Método para comparar password
+// Comparar password
 userSchema.methods.comparePassword = async function (candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
-// Método para actualizar último login
+// Actualizar último login
 userSchema.methods.updateLastLogin = async function () {
   this.lastLogin = Date.now();
   await this.save({ validateBeforeSave: false });
 };
 
-// Método para verificar créditos
+// Verificar créditos
 userSchema.methods.hasCredits = function () {
   return this.credits > 0;
 };
 
-// Método para consumir créditos
+// Usar crédito
 userSchema.methods.useCredit = async function () {
   if (this.credits > 0) {
     this.credits -= 1;
+    this.usage.totalGenerations += 1;
+    this.usage.thisMonthGenerations += 1;
     await this.save({ validateBeforeSave: false });
     return true;
   }
+  return false;
+};
+
+// Agregar créditos
+userSchema.methods.addCredits = async function (amount, purchaseData = {}) {
+  this.credits += amount;
+
+  if (purchaseData.paypalOrderId) {
+    this.purchases.push({
+      amount: purchaseData.amount || 0,
+      credits: amount,
+      paypalOrderId: purchaseData.paypalOrderId,
+      paypalCaptureId: purchaseData.paypalCaptureId,
+    });
+  }
+
+  await this.save({ validateBeforeSave: false });
+};
+
+// Reset mensual
+userSchema.methods.resetMonthlyUsage = async function () {
+  const now = new Date();
+  const lastReset = this.usage.lastResetDate;
+
+  if (
+    now.getMonth() !== lastReset.getMonth() ||
+    now.getFullYear() !== lastReset.getFullYear()
+  ) {
+    this.usage.thisMonthGenerations = 0;
+    this.usage.lastResetDate = now;
+
+    if (this.plan === "basic") {
+      this.credits = 100;
+    } else if (this.plan === "pro") {
+      this.credits = 300;
+    }
+
+    await this.save({ validateBeforeSave: false });
+  }
+};
+
+// Verificar si puede generar
+userSchema.methods.canGenerate = function () {
+  if (this.plan === "enterprise") {
+    return true;
+  }
+
+  if (this.plan === "pro" && this.usage.thisMonthGenerations < 300) {
+    return true;
+  }
+
+  if (this.plan === "basic" && this.usage.thisMonthGenerations < 100) {
+    return true;
+  }
+
+  if (this.plan === "free" && this.credits > 0) {
+    return true;
+  }
+
   return false;
 };
 

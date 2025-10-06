@@ -8,7 +8,7 @@ import User from "../models/User.model.js";
 
 /**
  * @route   POST /api/ai/generate
- * @desc    Genera código de sitio web usando IA
+ * @desc    Genera código de sitio web usando IA (GPT-5)
  * @access  Private
  */
 export const generate = async (req, res, next) => {
@@ -34,7 +34,7 @@ export const generate = async (req, res, next) => {
       });
     }
 
-    // Generar código con OpenAI
+    // Generar código con OpenAI GPT-5
     const result = await generateWebsiteCode(prompt, {
       type,
       style: style || "modern",
@@ -93,7 +93,7 @@ export const generate = async (req, res, next) => {
 
 /**
  * @route   POST /api/ai/improve
- * @desc    Mejora código existente
+ * @desc    Mejora código existente usando GPT-5
  * @access  Private
  */
 export const improve = async (req, res, next) => {
@@ -143,7 +143,7 @@ export const improve = async (req, res, next) => {
 
 /**
  * @route   POST /api/ai/suggestions
- * @desc    Obtiene sugerencias de diseño
+ * @desc    Obtiene sugerencias de diseño usando GPT-5
  * @access  Private
  */
 export const suggestions = async (req, res, next) => {

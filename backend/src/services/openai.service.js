@@ -1,256 +1,205 @@
-import OpenAI from "openai";
+import mongoose from "mongoose";
+import bcrypt from "bcryptjs";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+const userSchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
+      required: [true, "Please provide a name"],
+      trim: true,
+      maxlength: [50, "Name cannot be more than 50 characters"],
+    },
+    email: {
+      type: String,
+      required: [true, "Please provide an email"],
+      unique: true,
+      lowercase: true,
+      trim: true,
+      match: [
+        /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
+        "Please provide a valid email",
+      ],
+    },
+    password: {
+      type: String,
+      required: [true, "Please provide a password"],
+      minlength: [6, "Password must be at least 6 characters"],
+      select: false,
+    },
+    role: {
+      type: String,
+      enum: ["user", "admin"],
+      default: "user",
+    },
+
+    // ============= SISTEMA DE BILLING =============
+
+    plan: {
+      type: String,
+      enum: ["free", "basic", "pro", "enterprise"],
+      default: "free",
+    },
+
+    credits: {
+      type: Number,
+      default: 10,
+    },
+
+    subscription: {
+      stripeCustomerId: String,
+      stripeSubscriptionId: String,
+      stripePriceId: String,
+      status: {
+        type: String,
+        enum: ["active", "canceled", "past_due", "unpaid"],
+        default: null,
+      },
+      currentPeriodStart: Date,
+      currentPeriodEnd: Date,
+      cancelAtPeriodEnd: Boolean,
+    },
+
+    usage: {
+      totalGenerations: { type: Number, default: 0 },
+      thisMonthGenerations: { type: Number, default: 0 },
+      lastResetDate: { type: Date, default: Date.now },
+      totalSpent: { type: Number, default: 0 },
+    },
+
+    purchases: [
+      {
+        amount: Number,
+        credits: Number,
+        date: { type: Date, default: Date.now },
+        stripePaymentIntentId: String,
+      },
+    ],
+
+    avatar: {
+      type: String,
+      default: null,
+    },
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
+    resetPasswordToken: String,
+    resetPasswordExpire: Date,
+    lastLogin: {
+      type: Date,
+      default: Date.now,
+    },
+  },
+  {
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
+  }
+);
+
+// Virtual para proyectos
+userSchema.virtual("projects", {
+  ref: "Project",
+  localField: "_id",
+  foreignField: "user",
 });
 
-/**
- * Genera código HTML/CSS/JS usando GPT-4
- */
-export const generateWebsiteCode = async (prompt, options = {}) => {
-  const {
-    type = "custom",
-    style = "modern",
-    includeJS = false,
-    responsive = true,
-  } = options;
+// Hash password
+userSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) {
+    return next();
+  }
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
+  next();
+});
 
-  const systemPrompt = `You are an expert web developer. Generate complete, production-ready HTML code based on user requirements.
+// Comparar password
+userSchema.methods.comparePassword = async function (candidatePassword) {
+  return await bcrypt.compare(candidatePassword, this.password);
+};
 
-REQUIREMENTS:
-- Generate semantic, modern HTML5
-- Include inline CSS within <style> tags (use modern CSS features like Grid, Flexbox)
-- Make it fully responsive (mobile-first approach)
-- Use modern design principles (clean, professional, accessible)
-- NO external dependencies (no CDN links, no external libraries)
-- Code must be complete and ready to use immediately
-- Include proper meta tags for SEO
-- Use CSS variables for theming
-${
-  includeJS
-    ? "- Include minimal, vanilla JavaScript if needed for interactivity"
-    : "- NO JavaScript unless absolutely necessary"
-}
+// Actualizar último login
+userSchema.methods.updateLastLogin = async function () {
+  this.lastLogin = Date.now();
+  await this.save({ validateBeforeSave: false });
+};
 
-STYLE: ${style}
-TYPE: ${type}
+// Verificar créditos
+userSchema.methods.hasCredits = function () {
+  return this.credits > 0;
+};
 
-OUTPUT FORMAT:
-Return ONLY valid HTML code, nothing else. No explanations, no markdown code blocks, just pure HTML.`;
+// Usar crédito
+userSchema.methods.useCredit = async function () {
+  if (this.credits > 0) {
+    this.credits -= 1;
+    this.usage.totalGenerations += 1;
+    this.usage.thisMonthGenerations += 1;
+    await this.save({ validateBeforeSave: false });
+    return true;
+  }
+  return false;
+};
 
-  try {
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4-turbo-preview",
-      messages: [
-        {
-          role: "system",
-          content: systemPrompt,
-        },
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
-      temperature: 0.7,
-      max_tokens: 4000,
+// Agregar créditos
+userSchema.methods.addCredits = async function (amount, purchaseData = {}) {
+  this.credits += amount;
+
+  if (purchaseData.stripePaymentIntentId) {
+    this.purchases.push({
+      amount: purchaseData.amount || 0,
+      credits: amount,
+      stripePaymentIntentId: purchaseData.stripePaymentIntentId,
     });
+  }
 
-    const generatedCode = completion.choices[0].message.content.trim();
+  await this.save({ validateBeforeSave: false });
+};
 
-    // Extraer HTML, CSS y JS si están separados
-    const htmlCode = extractHTML(generatedCode);
-    const cssCode = extractCSS(generatedCode);
-    const jsCode = extractJS(generatedCode);
+// Reset mensual
+userSchema.methods.resetMonthlyUsage = async function () {
+  const now = new Date();
+  const lastReset = this.usage.lastResetDate;
 
-    // Detectar tipo automáticamente si no se especificó
-    const detectedType = detectWebsiteType(htmlCode);
+  if (
+    now.getMonth() !== lastReset.getMonth() ||
+    now.getFullYear() !== lastReset.getFullYear()
+  ) {
+    this.usage.thisMonthGenerations = 0;
+    this.usage.lastResetDate = now;
 
-    return {
-      success: true,
-      htmlCode,
-      cssCode,
-      jsCode,
-      type: type === "custom" ? detectedType : type,
-      tokensUsed: completion.usage.total_tokens,
-      model: completion.model,
-    };
-  } catch (error) {
-    console.error("OpenAI API Error:", error);
-
-    if (error.status === 401) {
-      throw new Error("Invalid OpenAI API key");
-    } else if (error.status === 429) {
-      throw new Error("OpenAI rate limit exceeded. Please try again later.");
-    } else if (error.status === 500) {
-      throw new Error("OpenAI service error. Please try again.");
+    if (this.plan === "basic") {
+      this.credits = 100;
+    } else if (this.plan === "pro") {
+      this.credits = 300;
     }
 
-    throw new Error("Failed to generate website code");
+    await this.save({ validateBeforeSave: false });
   }
 };
 
-/**
- * Mejora código existente usando GPT-4
- */
-export const improveCode = async (currentCode, improvements) => {
-  const systemPrompt = `You are an expert web developer. Improve the given HTML code based on user requirements.
-  
-Return ONLY the improved HTML code, nothing else.`;
-
-  try {
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4-turbo-preview",
-      messages: [
-        {
-          role: "system",
-          content: systemPrompt,
-        },
-        {
-          role: "user",
-          content: `Current code:\n\n${currentCode}\n\nImprovements requested:\n${improvements}`,
-        },
-      ],
-      temperature: 0.7,
-      max_tokens: 4000,
-    });
-
-    const improvedCode = completion.choices[0].message.content.trim();
-
-    return {
-      success: true,
-      htmlCode: extractHTML(improvedCode),
-      tokensUsed: completion.usage.total_tokens,
-    };
-  } catch (error) {
-    console.error("OpenAI API Error:", error);
-    throw new Error("Failed to improve code");
+// Verificar si puede generar
+userSchema.methods.canGenerate = function () {
+  if (this.plan === "enterprise") {
+    return true;
   }
+
+  if (this.plan === "pro" && this.usage.thisMonthGenerations < 300) {
+    return true;
+  }
+
+  if (this.plan === "basic" && this.usage.thisMonthGenerations < 100) {
+    return true;
+  }
+
+  if (this.plan === "free" && this.credits > 0) {
+    return true;
+  }
+
+  return false;
 };
 
-/**
- * Genera sugerencias de diseño basadas en el prompt
- */
-export const generateDesignSuggestions = async (prompt) => {
-  const systemPrompt = `You are a UX/UI design expert. Based on the user's website idea, suggest:
-1. Color palette (3-5 colors with hex codes)
-2. Font suggestions
-3. Layout recommendations
-4. Key features to include
+const User = mongoose.model("User", userSchema);
 
-Return as JSON object with keys: colors, fonts, layout, features`;
-
-  try {
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4-turbo-preview",
-      messages: [
-        {
-          role: "system",
-          content: systemPrompt,
-        },
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
-      temperature: 0.8,
-      max_tokens: 500,
-      response_format: { type: "json_object" },
-    });
-
-    const suggestions = JSON.parse(completion.choices[0].message.content);
-
-    return {
-      success: true,
-      suggestions,
-      tokensUsed: completion.usage.total_tokens,
-    };
-  } catch (error) {
-    console.error("OpenAI API Error:", error);
-    throw new Error("Failed to generate design suggestions");
-  }
-};
-
-/**
- * Extrae HTML del código generado
- */
-function extractHTML(code) {
-  // Si ya es HTML completo, retornar tal cual
-  if (code.includes("<!DOCTYPE html>") || code.includes("<html")) {
-    return code;
-  }
-
-  // Si está en markdown code block, extraer
-  const htmlMatch = code.match(/```html\n([\s\S]*?)\n```/);
-  if (htmlMatch) {
-    return htmlMatch[1];
-  }
-
-  return code;
-}
-
-/**
- * Extrae CSS del código si está separado
- */
-function extractCSS(code) {
-  const cssMatch = code.match(/<style[^>]*>([\s\S]*?)<\/style>/);
-  return cssMatch ? cssMatch[1] : "";
-}
-
-/**
- * Extrae JS del código si está separado
- */
-function extractJS(code) {
-  const jsMatch = code.match(/<script[^>]*>([\s\S]*?)<\/script>/);
-  return jsMatch ? jsMatch[1] : "";
-}
-
-/**
- * Detecta el tipo de sitio web basándose en el contenido
- */
-function detectWebsiteType(htmlCode) {
-  const lower = htmlCode.toLowerCase();
-
-  if (
-    lower.includes("dashboard") ||
-    lower.includes("sidebar") ||
-    lower.includes("stats")
-  ) {
-    return "dashboard";
-  }
-  if (
-    lower.includes("portfolio") ||
-    lower.includes("projects") ||
-    lower.includes("gallery")
-  ) {
-    return "portfolio";
-  }
-  if (
-    lower.includes("blog") ||
-    lower.includes("article") ||
-    lower.includes("post")
-  ) {
-    return "blog";
-  }
-  if (
-    lower.includes("shop") ||
-    lower.includes("product") ||
-    lower.includes("cart")
-  ) {
-    return "ecommerce";
-  }
-  if (
-    lower.includes("hero") ||
-    lower.includes("cta") ||
-    lower.includes("features")
-  ) {
-    return "landing";
-  }
-
-  return "custom";
-}
-
-export default {
-  generateWebsiteCode,
-  improveCode,
-  generateDesignSuggestions,
-};
+export default User;
