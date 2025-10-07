@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@monaco-editor/react": "^4.6.0",
+    "@paypal/react-paypal-js": "^8.9.2",
     "axios": "^1.6.0",
     "lucide-react": "^0.294.0",
     "monaco-editor": "^0.44.0",

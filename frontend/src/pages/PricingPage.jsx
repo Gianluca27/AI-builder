@@ -1,12 +1,21 @@
-import { Link } from "react-router-dom";
-import { Sparkles, Check, Zap } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Sparkles, Check, Zap, CreditCard } from "lucide-react";
 import { useAuthStore } from "../store/useAuthStore";
+import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
+import { billingAPI } from "../services/api";
+import { useState } from "react";
+import toast from "react-hot-toast";
 
 const PricingPage = () => {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
+  const navigate = useNavigate();
+  const [loadingPlan, setLoadingPlan] = useState(null);
+
+  const clientId = import.meta.env.VITE_PAYPAL_CLIENT_ID;
 
   const plans = [
     {
+      id: "free",
       name: "Free",
       price: "$0",
       period: "forever",
@@ -22,14 +31,36 @@ const PricingPage = () => {
       cta: "Get Started",
       ctaLink: "/register",
       popular: false,
+      disabled: false,
     },
     {
+      id: "basic",
+      name: "Basic",
+      price: "$9",
+      period: "per month",
+      planId: import.meta.env.VITE_PAYPAL_BASIC_PLAN_ID,
+      description: "Great for freelancers and small projects",
+      features: [
+        "100 AI generations/month",
+        "Unlimited projects",
+        "All templates",
+        "Priority support",
+        "Advanced customization",
+        "Export to React/Vue",
+      ],
+      cta: "Subscribe to Basic",
+      popular: false,
+      disabled: false,
+    },
+    {
+      id: "pro",
       name: "Pro",
       price: "$19",
       period: "per month",
+      planId: import.meta.env.VITE_PAYPAL_PRO_PLAN_ID,
       description: "Best for professionals and agencies",
       features: [
-        "Unlimited AI generations",
+        "300 AI generations/month",
         "Unlimited projects",
         "All premium templates",
         "Priority support",
@@ -39,29 +70,91 @@ const PricingPage = () => {
         "Team collaboration",
       ],
       cta: "Upgrade to Pro",
-      ctaLink: "/register",
       popular: true,
+      disabled: false,
     },
     {
+      id: "enterprise",
       name: "Enterprise",
       price: "$99",
       period: "per month",
+      planId: import.meta.env.VITE_PAYPAL_ENTERPRISE_PLAN_ID,
       description: "For large teams and organizations",
       features: [
-        "Everything in Pro",
-        "API access",
-        "White-label options",
+        "Unlimited AI generations",
+        "Unlimited projects",
+        "All enterprise features",
         "Dedicated support",
         "Custom integrations",
         "SSO & advanced security",
         "SLA guarantee",
         "Custom training",
       ],
-      cta: "Contact Sales",
-      ctaLink: "/register",
+      cta: "Go Enterprise",
       popular: false,
+      disabled: false,
     },
   ];
+
+  const creditPacks = [
+    {
+      id: "pack_50",
+      name: "50 Credits",
+      price: "$5",
+      credits: 50,
+      description: "Perfect for occasional use",
+    },
+    {
+      id: "pack_100",
+      name: "100 Credits",
+      price: "$9",
+      credits: 100,
+      description: "Best value for money",
+      popular: true,
+    },
+    {
+      id: "pack_500",
+      name: "500 Credits",
+      price: "$40",
+      credits: 500,
+      description: "For power users",
+    },
+  ];
+
+  const handleSubscription = async (planId) => {
+    if (!isAuthenticated) {
+      navigate("/register");
+      return;
+    }
+
+    setLoadingPlan(planId);
+    try {
+      const response = await billingAPI.createSubscription(planId);
+      // Redirigir a PayPal para aprobar la suscripción
+      window.location.href = response.approvalUrl;
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message || "Error creating subscription"
+      );
+    } finally {
+      setLoadingPlan(null);
+    }
+  };
+
+  const handleCreditPack = async (packId) => {
+    if (!isAuthenticated) {
+      navigate("/register");
+      return;
+    }
+
+    try {
+      const response = await billingAPI.createOrder(packId);
+      // Redirigir a PayPal para completar el pago
+      window.location.href = response.approvalUrl;
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Error creating order");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -117,7 +210,7 @@ const PricingPage = () => {
 
       {/* Pricing Cards */}
       <div className="max-w-7xl mx-auto px-6 py-20">
-        <div className="grid md:grid-cols-3 gap-8">
+        <div className="grid md:grid-cols-4 gap-8">
           {plans.map((plan, index) => (
             <div
               key={index}
@@ -131,6 +224,12 @@ const PricingPage = () => {
                 <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-1 rounded-full text-sm font-bold flex items-center gap-1">
                   <Zap size={14} />
                   MOST POPULAR
+                </div>
+              )}
+
+              {user?.plan === plan.id && (
+                <div className="absolute -top-4 right-4 bg-green-500 text-white px-4 py-1 rounded-full text-xs font-bold">
+                  CURRENT PLAN
                 </div>
               )}
 
@@ -155,16 +254,94 @@ const PricingPage = () => {
                 ))}
               </ul>
 
-              <Link
-                to={plan.ctaLink}
-                className={`block w-full text-center py-3 rounded-lg font-semibold transition ${
-                  plan.popular
-                    ? "bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:shadow-lg"
-                    : "bg-gray-100 text-gray-900 hover:bg-gray-200"
-                }`}
+              {plan.id === "free" ? (
+                <Link
+                  to={plan.ctaLink}
+                  className={`block w-full text-center py-3 rounded-lg font-semibold transition ${
+                    plan.popular
+                      ? "bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:shadow-lg"
+                      : "bg-gray-100 text-gray-900 hover:bg-gray-200"
+                  }`}
+                >
+                  {plan.cta}
+                </Link>
+              ) : (
+                <button
+                  onClick={() => handleSubscription(plan.planId)}
+                  disabled={
+                    loadingPlan === plan.planId ||
+                    user?.plan === plan.id ||
+                    !isAuthenticated
+                  }
+                  className={`w-full py-3 rounded-lg font-semibold transition ${
+                    user?.plan === plan.id
+                      ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                      : plan.popular
+                      ? "bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:shadow-lg"
+                      : "bg-gray-100 text-gray-900 hover:bg-gray-200"
+                  } ${loadingPlan === plan.planId ? "opacity-50" : ""}`}
+                >
+                  {loadingPlan === plan.planId ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Processing...
+                    </span>
+                  ) : user?.plan === plan.id ? (
+                    "Current Plan"
+                  ) : !isAuthenticated ? (
+                    "Sign Up to Subscribe"
+                  ) : (
+                    plan.cta
+                  )}
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Credit Packs Section */}
+      <div className="max-w-7xl mx-auto px-6 py-20 bg-gradient-to-r from-purple-50 to-blue-50 -mx-6">
+        <div className="text-center mb-12">
+          <h2 className="text-4xl font-bold mb-4">Need Extra Credits?</h2>
+          <p className="text-gray-600 text-lg">
+            Purchase credit packs to supplement your plan
+          </p>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+          {creditPacks.map((pack) => (
+            <div
+              key={pack.id}
+              className={`bg-white rounded-xl p-8 shadow-lg ${
+                pack.popular ? "ring-2 ring-purple-600 relative" : ""
+              }`}
+            >
+              {pack.popular && (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-purple-600 text-white px-4 py-1 rounded-full text-xs font-bold">
+                  BEST VALUE
+                </div>
+              )}
+
+              <div className="text-center mb-6">
+                <CreditCard
+                  className="mx-auto mb-4 text-purple-600"
+                  size={48}
+                />
+                <h3 className="text-2xl font-bold mb-2">{pack.name}</h3>
+                <p className="text-gray-600 text-sm mb-4">{pack.description}</p>
+                <div className="text-4xl font-bold text-purple-600">
+                  {pack.price}
+                </div>
+              </div>
+
+              <button
+                onClick={() => handleCreditPack(pack.id)}
+                disabled={!isAuthenticated}
+                className="w-full py-3 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition disabled:bg-gray-300 disabled:cursor-not-allowed"
               >
-                {plan.cta}
-              </Link>
+                {!isAuthenticated ? "Sign Up to Purchase" : "Buy Now"}
+              </button>
             </div>
           ))}
         </div>
@@ -182,8 +359,8 @@ const PricingPage = () => {
               Can I upgrade or downgrade my plan?
             </h3>
             <p className="text-gray-600">
-              Yes! You can change your plan at any time. Changes take effect
-              immediately and we'll prorate any charges.
+              Yes! You can change your plan at any time from your dashboard.
+              Changes take effect immediately.
             </p>
           </div>
 
@@ -192,28 +369,28 @@ const PricingPage = () => {
               What payment methods do you accept?
             </h3>
             <p className="text-gray-600">
-              We accept all major credit cards, PayPal, and bank transfers for
-              Enterprise plans.
+              We accept all major credit cards through PayPal. You don't need a
+              PayPal account to pay.
             </p>
           </div>
 
           <div className="bg-white rounded-xl p-6 shadow-sm">
             <h3 className="text-lg font-bold mb-2">
-              Is there a free trial for Pro?
+              Do unused credits roll over?
             </h3>
             <p className="text-gray-600">
-              Yes! We offer a 7-day free trial for the Pro plan. No credit card
-              required.
+              Subscription credits reset monthly. Credit packs never expire and
+              can be used anytime.
             </p>
           </div>
 
           <div className="bg-white rounded-xl p-6 shadow-sm">
             <h3 className="text-lg font-bold mb-2">
-              What happens to my projects if I cancel?
+              What happens if I cancel?
             </h3>
             <p className="text-gray-600">
-              Your projects remain accessible. You can export them at any time,
-              but new AI generations will be limited to the Free plan allowance.
+              Your subscription will remain active until the end of the billing
+              period. You can still use all features until then.
             </p>
           </div>
         </div>

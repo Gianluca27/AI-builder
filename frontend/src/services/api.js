@@ -150,4 +150,46 @@ export const templatesAPI = {
   },
 };
 
+// ==========================================
+// BILLING API (PayPal Integration)
+// ==========================================
+
+export const billingAPI = {
+  // Obtener todos los planes disponibles
+  getPlans: async () => {
+    const response = await api.get("/billing/plans");
+    return response.data;
+  },
+
+  // Crear suscripción (Basic, Pro, Enterprise)
+  createSubscription: async (planId) => {
+    const response = await api.post("/billing/create-subscription", { planId });
+    return response.data;
+  },
+
+  // Crear orden de compra (Packs de créditos)
+  createOrder: async (packId) => {
+    const response = await api.post("/billing/create-order", { packId });
+    return response.data;
+  },
+
+  // Capturar orden después del pago
+  captureOrder: async (orderId) => {
+    const response = await api.post("/billing/capture-order", { orderId });
+    return response.data;
+  },
+
+  // Cancelar suscripción actual
+  cancelSubscription: async () => {
+    const response = await api.post("/billing/cancel-subscription");
+    return response.data;
+  },
+
+  // Obtener uso y estadísticas
+  getUsage: async () => {
+    const response = await api.get("/billing/usage");
+    return response.data;
+  },
+};
+
 export default api;

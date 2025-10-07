@@ -6,8 +6,9 @@ import {
   Code as CodeIcon,
   Download,
   Save,
-  Settings,
   Home,
+  Zap,
+  CreditCard,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useBuilderStore } from "../store/useBuilderStore";
@@ -83,6 +84,29 @@ ${generatedCode.js ? `<script>${generatedCode.js}</script>` : ""}
     "Make a blog homepage with article cards",
   ];
 
+  const getCreditsColor = () => {
+    if (user?.plan === "enterprise") return "bg-yellow-50 border-yellow-200";
+    if (credits === null) return "bg-gray-50 border-gray-200";
+    if (credits === 0) return "bg-red-50 border-red-200";
+    if (credits <= 5) return "bg-orange-50 border-orange-200";
+    return "bg-purple-50 border-purple-200";
+  };
+
+  const getCreditsTextColor = () => {
+    if (user?.plan === "enterprise") return "text-yellow-900";
+    if (credits === null) return "text-gray-900";
+    if (credits === 0) return "text-red-900";
+    if (credits <= 5) return "text-orange-900";
+    return "text-purple-900";
+  };
+
+  const getCreditsLinkColor = () => {
+    if (user?.plan === "enterprise") return "text-yellow-600";
+    if (credits === 0) return "text-red-600";
+    if (credits <= 5) return "text-orange-600";
+    return "text-purple-600";
+  };
+
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Sidebar - Chat */}
@@ -102,18 +126,71 @@ ${generatedCode.js ? `<script>${generatedCode.js}</script>` : ""}
             Describe your website and let AI build it
           </p>
 
-          {/* Credits */}
-          {user?.plan === "free" && credits !== null && (
-            <div className="mt-4 bg-purple-50 p-3 rounded-lg">
-              <p className="text-sm font-medium text-purple-900">
-                {credits} credits remaining
-              </p>
-              <Link
-                to="/pricing"
-                className="text-xs text-purple-600 hover:underline"
-              >
-                Upgrade for unlimited
-              </Link>
+          {/* Credits Badge - Enhanced */}
+          {credits !== null && (
+            <div
+              className={`mt-4 border rounded-lg p-4 transition-all ${getCreditsColor()}`}
+            >
+              <div className="flex items-start justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  {user?.plan === "enterprise" ? (
+                    <Zap className={getCreditsTextColor()} size={20} />
+                  ) : (
+                    <CreditCard className={getCreditsTextColor()} size={20} />
+                  )}
+                  <span className={`font-bold ${getCreditsTextColor()}`}>
+                    {user?.plan === "enterprise"
+                      ? "Unlimited Credits"
+                      : `${credits} ${credits === 1 ? "Credit" : "Credits"}`}
+                  </span>
+                </div>
+                {user?.plan !== "enterprise" && credits <= 5 && (
+                  <span className="text-xs font-semibold px-2 py-1 bg-white rounded">
+                    {credits === 0 ? "OUT!" : "LOW"}
+                  </span>
+                )}
+              </div>
+
+              {user?.plan === "enterprise" ? (
+                <p className="text-xs text-yellow-700 mb-2">
+                  Generate as many websites as you want with your Enterprise
+                  plan
+                </p>
+              ) : credits === 0 ? (
+                <p className="text-xs text-red-700 mb-2">
+                  You've run out of credits. Upgrade or buy a credit pack to
+                  continue.
+                </p>
+              ) : credits <= 5 ? (
+                <p className="text-xs text-orange-700 mb-2">
+                  You're running low on credits. Consider upgrading your plan.
+                </p>
+              ) : (
+                <p className="text-xs text-purple-700 mb-2">
+                  {user?.plan === "free"
+                    ? "Upgrade for more credits per month"
+                    : "Credits reset monthly with your subscription"}
+                </p>
+              )}
+
+              {user?.plan !== "enterprise" && (
+                <Link
+                  to="/pricing"
+                  className={`text-xs font-semibold hover:underline flex items-center gap-1 ${getCreditsLinkColor()}`}
+                >
+                  {credits === 0 ? (
+                    <>
+                      <Zap size={14} />
+                      Get More Credits
+                    </>
+                  ) : (
+                    <>
+                      <Zap size={14} />
+                      {user?.plan === "free" ? "Upgrade Plan" : "Buy Credits"}
+                    </>
+                  )}
+                </Link>
+              )}
             </div>
           )}
         </div>
@@ -170,16 +247,36 @@ ${generatedCode.js ? `<script>${generatedCode.js}</script>` : ""}
               onKeyPress={handleKeyPress}
               placeholder="Describe your website..."
               className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-              disabled={isGenerating}
+              disabled={
+                isGenerating || (credits === 0 && user?.plan !== "enterprise")
+              }
             />
             <button
               onClick={handleSend}
-              disabled={isGenerating || !prompt.trim()}
+              disabled={
+                isGenerating ||
+                !prompt.trim() ||
+                (credits === 0 && user?.plan !== "enterprise")
+              }
               className="px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              title={
+                credits === 0 && user?.plan !== "enterprise"
+                  ? "No credits remaining"
+                  : ""
+              }
             >
               <Send size={20} />
             </button>
           </div>
+          {credits === 0 && user?.plan !== "enterprise" && (
+            <p className="text-xs text-red-600 mt-2">
+              Out of credits.{" "}
+              <Link to="/pricing" className="underline font-semibold">
+                Get more
+              </Link>{" "}
+              to continue generating.
+            </p>
+          )}
         </div>
       </aside>
 

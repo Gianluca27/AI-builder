@@ -8,12 +8,12 @@ import User from "../models/User.model.js";
 
 /**
  * @route   POST /api/ai/generate
- * @desc    Genera código de sitio web usando IA (GPT-5)
+ * @desc    Genera código de sitio web usando IA
  * @access  Private
  */
 export const generate = async (req, res, next) => {
   try {
-    const { prompt, type, style, includeJS, saveas } = req.body;
+    const { prompt, type, style, includeJS, saveAs } = req.body;
     const userId = req.user.id;
 
     // Validar prompt
@@ -24,17 +24,20 @@ export const generate = async (req, res, next) => {
       });
     }
 
-    // Verificar créditos del usuario
+    // Verificar si puede generar (créditos o plan)
     const user = await User.findById(userId);
-    if (!user.hasCredits() && user.plan === "free") {
+
+    if (!user.canGenerate()) {
       return res.status(403).json({
         success: false,
-        message: "No credits remaining. Please upgrade your plan.",
+        message:
+          "No credits remaining. Please upgrade your plan or buy more credits.",
         credits: user.credits,
+        plan: user.plan,
       });
     }
 
-    // Generar código con OpenAI GPT-5
+    // Generar código con OpenAI
     const result = await generateWebsiteCode(prompt, {
       type,
       style: style || "modern",
@@ -42,8 +45,8 @@ export const generate = async (req, res, next) => {
       responsive: true,
     });
 
-    // Consumir crédito (solo para plan free)
-    if (user.plan === "free") {
+    // Consumir crédito (para todos los planes menos enterprise)
+    if (user.plan !== "enterprise") {
       await user.useCredit();
     }
 
@@ -80,6 +83,7 @@ export const generate = async (req, res, next) => {
         creditsRemaining: user.credits,
         tokensUsed: result.tokensUsed,
         model: result.model,
+        plan: user.plan,
       },
     });
   } catch (error) {
@@ -93,7 +97,7 @@ export const generate = async (req, res, next) => {
 
 /**
  * @route   POST /api/ai/improve
- * @desc    Mejora código existente usando GPT-5
+ * @desc    Mejora código existente
  * @access  Private
  */
 export const improve = async (req, res, next) => {
@@ -109,7 +113,8 @@ export const improve = async (req, res, next) => {
     }
 
     const user = await User.findById(userId);
-    if (!user.hasCredits() && user.plan === "free") {
+
+    if (!user.canGenerate()) {
       return res.status(403).json({
         success: false,
         message: "No credits remaining",
@@ -118,7 +123,7 @@ export const improve = async (req, res, next) => {
 
     const result = await improveCode(code, improvements);
 
-    if (user.plan === "free") {
+    if (user.plan !== "enterprise") {
       await user.useCredit();
     }
 
@@ -143,7 +148,7 @@ export const improve = async (req, res, next) => {
 
 /**
  * @route   POST /api/ai/suggestions
- * @desc    Obtiene sugerencias de diseño usando GPT-5
+ * @desc    Obtiene sugerencias de diseño
  * @access  Private
  */
 export const suggestions = async (req, res, next) => {
@@ -182,14 +187,18 @@ export const suggestions = async (req, res, next) => {
  */
 export const getCredits = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user.id).select("credits plan");
+    const user = await User.findById(req.user.id).select("credits plan usage");
 
     res.status(200).json({
       success: true,
       data: {
         credits: user.credits,
         plan: user.plan,
-        unlimited: user.plan !== "free",
+        unlimited: user.plan === "enterprise",
+        usage: {
+          thisMonth: user.usage.thisMonthGenerations,
+          total: user.usage.totalGenerations,
+        },
       },
     });
   } catch (error) {
