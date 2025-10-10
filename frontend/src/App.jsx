@@ -17,6 +17,7 @@ import DashboardPage from "./pages/DashboardPage";
 import TemplatesPage from "./pages/TemplatesPage";
 import PricingPage from "./pages/PricingPage";
 import DocsPage from "./pages/DocsPage";
+import GithubCallbackPage from "./pages/GithubCallbackPage";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -45,6 +46,7 @@ function App() {
           <Route path="/templates" element={<TemplatesPage />} />
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/docs" element={<DocsPage />} />
+          <Route path="/github/callback" element={<GithubCallbackPage />} />
 
           {/* Protected routes */}
           <Route

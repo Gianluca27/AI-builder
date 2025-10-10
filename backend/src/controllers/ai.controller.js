@@ -209,9 +209,58 @@ export const getCredits = async (req, res, next) => {
   }
 };
 
+/**
+ * @route   POST /api/ai/transcribe
+ * @desc    Transcribe audio to text using OpenAI Whisper
+ * @access  Private
+ */
+export const transcribeAudio = async (req, res, next) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: "Audio file is required",
+      });
+    }
+
+    const OpenAI = (await import("openai")).default;
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+
+    // Crear un archivo temporal con el buffer
+    const File = (await import("buffer")).File;
+    const audioFile = new File([req.file.buffer], "audio.webm", {
+      type: req.file.mimetype,
+    });
+
+    const response = await openai.audio.transcriptions.create({
+      file: audioFile,
+      model: "whisper-1",
+      language: req.body.language || "es", // Español por defecto, puedes hacerlo dinámico
+      response_format: "json",
+      temperature: 0.2,
+    });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        text: response.text,
+      },
+    });
+  } catch (error) {
+    console.error("Transcription Error:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Failed to transcribe audio",
+    });
+  }
+};
+
 export default {
   generate,
   improve,
   suggestions,
   getCredits,
+  transcribeAudio,
 };

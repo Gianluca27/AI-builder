@@ -28,14 +28,14 @@ const SaveProjectModal = ({ isOpen, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl max-w-md w-full p-6">
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-black border-2 border-yellow-400/50 rounded-2xl max-w-md w-full p-6 shadow-2xl shadow-yellow-400/20">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold">Save Project</h2>
+          <h2 className="text-2xl font-bold font-mono text-yellow-400">$ save_project</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition"
+            className="text-yellow-400 hover:text-yellow-300 transition"
           >
             <X size={24} />
           </button>
@@ -45,8 +45,8 @@ const SaveProjectModal = ({ isOpen, onClose }) => {
         <form onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Project Name *
+              <label className="block text-sm font-medium font-mono text-green-400 mb-2">
+                // Project Name *
               </label>
               <input
                 type="text"
@@ -54,23 +54,23 @@ const SaveProjectModal = ({ isOpen, onClose }) => {
                 onChange={(e) =>
                   setFormData({ ...formData, name: e.target.value })
                 }
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                placeholder="My Awesome Website"
+                className="w-full px-4 py-3 bg-black/50 border-2 border-yellow-400/30 rounded-lg focus:outline-none focus:border-yellow-400 text-white font-mono placeholder:text-green-400/50 transition-colors"
+                placeholder="$ my_awesome_website"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Description (optional)
+              <label className="block text-sm font-medium font-mono text-green-400 mb-2">
+                // Description (optional)
               </label>
               <textarea
                 value={formData.description}
                 onChange={(e) =>
                   setFormData({ ...formData, description: e.target.value })
                 }
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
-                placeholder="Brief description of your project..."
+                className="w-full px-4 py-3 bg-black/50 border-2 border-yellow-400/30 rounded-lg focus:outline-none focus:border-yellow-400 text-white font-mono placeholder:text-green-400/50 resize-none transition-colors"
+                placeholder="// Brief description of your project..."
                 rows={3}
               />
             </div>
@@ -81,16 +81,16 @@ const SaveProjectModal = ({ isOpen, onClose }) => {
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+              className="flex-1 px-4 py-3 border-2 border-yellow-400/30 rounded-lg hover:border-yellow-400/50 transition font-mono text-green-400 hover:text-yellow-400"
             >
-              Cancel
+              $ cancel
             </button>
             <button
               type="submit"
               disabled={isSaving}
-              className="flex-1 px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-4 py-3 bg-yellow-400 text-black rounded-lg hover:bg-yellow-300 transition disabled:opacity-50 disabled:cursor-not-allowed font-mono font-bold"
             >
-              {isSaving ? "Saving..." : "Save Project"}
+              {isSaving ? "$ saving..." : "$ save"}
             </button>
           </div>
         </form>

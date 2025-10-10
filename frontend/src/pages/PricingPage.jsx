@@ -1,17 +1,39 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Sparkles, Check, Zap, CreditCard } from "lucide-react";
+import { Check, Zap, CreditCard, Terminal, Menu, X } from "lucide-react";
 import { useAuthStore } from "../store/useAuthStore";
 import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 import { billingAPI } from "../services/api";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 
 const PricingPage = () => {
   const { isAuthenticated, user } = useAuthStore();
   const navigate = useNavigate();
   const [loadingPlan, setLoadingPlan] = useState(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [tetrisBlocks, setTetrisBlocks] = useState([]);
 
   const clientId = import.meta.env.VITE_PAYPAL_CLIENT_ID;
+
+  useEffect(() => {
+    // Generate tetris-like code blocks
+    const blocks = Array.from({ length: 15 }, (_, i) => ({
+      id: i,
+      left: Math.random() * 100,
+      delay: Math.random() * 5,
+      duration: 15 + Math.random() * 10,
+    }));
+    setTetrisBlocks(blocks);
+  }, []);
+
+  const codeSnippets = [
+    "$ subscribe --plan=pro",
+    "const pricing = {...}",
+    "// Choose your plan",
+    "npm install --save",
+    "export default Plan;",
+    "PayPal.init()",
+  ];
 
   const plans = [
     {
@@ -157,99 +179,218 @@ const PricingPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2 text-2xl font-bold">
-            <Sparkles className="text-purple-600" size={28} />
-            <span>AI Builder</span>
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black relative overflow-hidden">
+      {/* Grid Pattern Overlay */}
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(99,102,241,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(99,102,241,0.03)_1px,transparent_1px)] bg-[size:50px_50px] pointer-events-none"></div>
+
+      {/* Animated Code Tetris Background */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {tetrisBlocks.map((block) => (
+          <div
+            key={block.id}
+            className="absolute text-cyan-400/10 font-mono text-xs whitespace-nowrap animate-tetris-fall"
+            style={{
+              left: `${block.left}%`,
+              animationDelay: `${block.delay}s`,
+              animationDuration: `${block.duration}s`,
+            }}
+          >
+            {codeSnippets[Math.floor(Math.random() * codeSnippets.length)]}
+          </div>
+        ))}
+      </div>
+
+      {/* Scanline effect */}
+      <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-transparent via-cyan-400/5 to-transparent animate-scanline"></div>
+
+      {/* Navigation */}
+      <nav className="bg-black/80 backdrop-blur-sm border-b border-cyan-400/30 sticky top-0 z-50 shadow-lg shadow-cyan-400/10">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+          <Link
+            to="/"
+            className="flex items-center gap-3 text-cyan-400 text-2xl font-mono font-bold group"
+          >
+            <Terminal size={32} className="animate-pulse-slow" />
+            <span className="group-hover:text-cyan-300 transition-colors">
+              {"<AI_Builder />"}
+            </span>
           </Link>
-          <div className="flex items-center gap-4">
-            <Link to="/templates" className="text-gray-600 hover:text-gray-900">
-              Templates
+
+          {/* Desktop Menu */}
+          <div className="hidden md:flex gap-8 text-emerald-400 items-center font-mono">
+            <Link
+              to="/templates"
+              className="hover:text-cyan-400 transition-colors hover:underline"
+            >
+              ./templates
             </Link>
-            <Link to="/docs" className="text-gray-600 hover:text-gray-900">
-              Docs
+            <Link
+              to="/pricing"
+              className="hover:text-cyan-400 transition-colors hover:underline"
+            >
+              ./pricing
+            </Link>
+            <Link
+              to="/docs"
+              className="hover:text-cyan-400 transition-colors hover:underline"
+            >
+              ./docs
             </Link>
             {isAuthenticated ? (
-              <Link
-                to="/builder"
-                className="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700"
-              >
-                Open Builder
-              </Link>
+              <>
+                <Link
+                  to="/dashboard"
+                  className="hover:text-cyan-400 transition-colors hover:underline"
+                >
+                  ./dashboard
+                </Link>
+                <Link
+                  to="/builder"
+                  className="bg-cyan-400 text-black px-6 py-2 rounded font-bold hover:bg-cyan-300 transition-all hover:shadow-lg hover:shadow-cyan-400/50 border-2 border-cyan-400"
+                >
+                  $ run builder
+                </Link>
+              </>
             ) : (
               <>
-                <Link to="/login" className="text-gray-600 hover:text-gray-900">
-                  Login
+                <Link
+                  to="/login"
+                  className="hover:text-cyan-400 transition-colors hover:underline"
+                >
+                  ./login
                 </Link>
                 <Link
                   to="/register"
-                  className="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700"
+                  className="bg-cyan-400 text-black px-6 py-2 rounded font-bold hover:bg-cyan-300 transition-all hover:shadow-lg hover:shadow-cyan-400/50 border-2 border-cyan-400"
                 >
-                  Get Started
+                  $ init
                 </Link>
               </>
             )}
           </div>
+
+          {/* Mobile Menu Button */}
+          <button
+            className="md:hidden text-cyan-400"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          >
+            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
         </div>
-      </header>
+
+        {/* Mobile Menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden bg-slate-900/90 backdrop-blur-sm border-t border-cyan-400/30 p-4 text-emerald-400 font-mono">
+            <Link
+              to="/templates"
+              className="block py-2 hover:text-cyan-400 transition-colors"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              ./templates
+            </Link>
+            <Link
+              to="/pricing"
+              className="block py-2 hover:text-cyan-400 transition-colors"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              ./pricing
+            </Link>
+            <Link
+              to="/docs"
+              className="block py-2 hover:text-cyan-400 transition-colors"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              ./docs
+            </Link>
+            {isAuthenticated ? (
+              <Link
+                to="/builder"
+                className="block py-2 hover:text-cyan-400 transition-colors"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                $ run builder
+              </Link>
+            ) : (
+              <>
+                <Link
+                  to="/login"
+                  className="block py-2 hover:text-cyan-400 transition-colors"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  ./login
+                </Link>
+                <Link
+                  to="/register"
+                  className="block py-2 hover:text-cyan-400 transition-colors"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  $ init
+                </Link>
+              </>
+            )}
+          </div>
+        )}
+      </nav>
 
       {/* Hero */}
-      <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white py-20">
+      <div className="bg-gradient-to-r from-cyan-400/20 via-purple-400/20 to-cyan-400/20 border-y-2 border-cyan-400/30 text-white py-20 relative z-10">
         <div className="max-w-4xl mx-auto px-6 text-center">
-          <h1 className="text-5xl font-bold mb-4">
-            Simple, Transparent Pricing
+          <div className="inline-block mb-6 px-4 py-2 bg-cyan-400/10 border border-cyan-400/30 rounded text-cyan-400 font-mono text-sm animate-pulse-slow">
+            $ cat pricing.json
+          </div>
+          <h1 className="text-5xl md:text-6xl font-bold mb-4 font-mono">
+            <span className="text-cyan-400">&gt;</span>
+            <span className="text-white"> Simple, Transparent </span>
+            <span className="text-emerald-400">Pricing</span>
           </h1>
-          <p className="text-xl opacity-90">
-            Choose the perfect plan for your needs. Always know what you'll pay.
+          <p className="text-xl text-emerald-400 font-mono">
+            // Choose the perfect plan for your needs. Always know what you'll pay.
           </p>
         </div>
       </div>
 
       {/* Pricing Cards */}
-      <div className="max-w-7xl mx-auto px-6 py-20">
+      <div className="max-w-7xl mx-auto px-6 py-20 relative z-10">
         <div className="grid md:grid-cols-4 gap-8">
           {plans.map((plan, index) => (
             <div
               key={index}
-              className={`bg-white rounded-2xl p-8 relative ${
+              className={`bg-slate-900/70 backdrop-blur-sm border-2 rounded-lg p-8 relative transition-all duration-300 transform hover:-translate-y-2 ${
                 plan.popular
-                  ? "ring-2 ring-purple-600 shadow-2xl scale-105"
-                  : "shadow-lg"
+                  ? "border-cyan-400 shadow-2xl shadow-cyan-400/30 scale-105"
+                  : "border-cyan-400/30 hover:border-cyan-400 hover:shadow-lg hover:shadow-cyan-400/30"
               }`}
             >
               {plan.popular && (
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-1 rounded-full text-sm font-bold flex items-center gap-1">
+                <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-cyan-400 text-black px-6 py-1 rounded text-sm font-bold font-mono flex items-center gap-1">
                   <Zap size={14} />
                   MOST POPULAR
                 </div>
               )}
 
               {user?.plan === plan.id && (
-                <div className="absolute -top-4 right-4 bg-green-500 text-white px-4 py-1 rounded-full text-xs font-bold">
+                <div className="absolute -top-4 right-4 bg-green-400 text-black px-4 py-1 rounded text-xs font-bold font-mono">
                   CURRENT PLAN
                 </div>
               )}
 
               <div className="text-center mb-8">
-                <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
-                <p className="text-gray-600 text-sm mb-4">{plan.description}</p>
+                <h3 className="text-2xl font-bold mb-2 text-cyan-400 font-mono">{plan.name}</h3>
+                <p className="text-emerald-400 text-sm mb-4 font-mono">// {plan.description}</p>
                 <div className="mb-2">
-                  <span className="text-5xl font-bold">{plan.price}</span>
+                  <span className="text-5xl font-bold text-white font-mono">{plan.price}</span>
                 </div>
-                <p className="text-gray-500 text-sm">{plan.period}</p>
+                <p className="text-emerald-400/70 text-sm font-mono">{plan.period}</p>
               </div>
 
               <ul className="space-y-4 mb-8">
                 {plan.features.map((feature, i) => (
                   <li key={i} className="flex items-start gap-3">
                     <Check
-                      className="text-green-500 flex-shrink-0 mt-0.5"
+                      className="text-emerald-400 flex-shrink-0 mt-0.5"
                       size={20}
                     />
-                    <span className="text-gray-700">{feature}</span>
+                    <span className="text-emerald-400 font-mono text-sm">{feature}</span>
                   </li>
                 ))}
               </ul>
@@ -257,41 +398,46 @@ const PricingPage = () => {
               {plan.id === "free" ? (
                 <Link
                   to={plan.ctaLink}
-                  className={`block w-full text-center py-3 rounded-lg font-semibold transition ${
+                  className={`block w-full text-center py-3 rounded font-semibold font-mono transition-all ${
                     plan.popular
-                      ? "bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:shadow-lg"
-                      : "bg-gray-100 text-gray-900 hover:bg-gray-200"
+                      ? "bg-cyan-400 text-black hover:bg-cyan-300 hover:shadow-lg hover:shadow-cyan-400/50"
+                      : "bg-black/50 border-2 border-cyan-400/50 text-cyan-400 hover:bg-cyan-400/10 hover:border-cyan-400"
                   }`}
                 >
-                  {plan.cta}
+                  $ {plan.cta}
+                </Link>
+              ) : !isAuthenticated ? (
+                <Link
+                  to="/register"
+                  className={`block w-full text-center py-3 rounded font-semibold font-mono transition-all ${
+                    plan.popular
+                      ? "bg-cyan-400 text-black hover:bg-cyan-300 hover:shadow-lg hover:shadow-cyan-400/50"
+                      : "bg-black/50 border-2 border-cyan-400/50 text-cyan-400 hover:bg-cyan-400/10 hover:border-cyan-400"
+                  }`}
+                >
+                  $ Sign Up to Subscribe
                 </Link>
               ) : (
                 <button
                   onClick={() => handleSubscription(plan.planId)}
-                  disabled={
-                    loadingPlan === plan.planId ||
-                    user?.plan === plan.id ||
-                    !isAuthenticated
-                  }
-                  className={`w-full py-3 rounded-lg font-semibold transition ${
+                  disabled={loadingPlan === plan.planId || user?.plan === plan.id}
+                  className={`w-full py-3 rounded font-semibold font-mono transition-all ${
                     user?.plan === plan.id
-                      ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                      ? "bg-green-400/20 text-emerald-400 cursor-not-allowed border-2 border-emerald-400/30"
                       : plan.popular
-                      ? "bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:shadow-lg"
-                      : "bg-gray-100 text-gray-900 hover:bg-gray-200"
+                      ? "bg-cyan-400 text-black hover:bg-cyan-300 hover:shadow-lg hover:shadow-cyan-400/50"
+                      : "bg-black/50 border-2 border-cyan-400/50 text-cyan-400 hover:bg-cyan-400/10 hover:border-cyan-400"
                   } ${loadingPlan === plan.planId ? "opacity-50" : ""}`}
                 >
                   {loadingPlan === plan.planId ? (
                     <span className="flex items-center justify-center gap-2">
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
                       Processing...
                     </span>
                   ) : user?.plan === plan.id ? (
-                    "Current Plan"
-                  ) : !isAuthenticated ? (
-                    "Sign Up to Subscribe"
+                    "$ Current Plan"
                   ) : (
-                    plan.cta
+                    `$ ${plan.cta}`
                   )}
                 </button>
               )}
@@ -301,11 +447,16 @@ const PricingPage = () => {
       </div>
 
       {/* Credit Packs Section */}
-      <div className="max-w-7xl mx-auto px-6 py-20 bg-gradient-to-r from-purple-50 to-blue-50 -mx-6">
+      <div className="max-w-7xl mx-auto px-6 py-20 bg-gradient-to-r from-cyan-400/10 via-green-400/10 to-cyan-400/10 border-y-2 border-cyan-400/30 relative z-10">
         <div className="text-center mb-12">
-          <h2 className="text-4xl font-bold mb-4">Need Extra Credits?</h2>
-          <p className="text-gray-600 text-lg">
-            Purchase credit packs to supplement your plan
+          <div className="inline-block mb-4 px-4 py-2 bg-cyan-400/10 border border-cyan-400/30 rounded text-cyan-400 font-mono text-sm">
+            $ ls credits/
+          </div>
+          <h2 className="text-4xl font-bold mb-4 text-white font-mono">
+            <span className="text-cyan-400">&gt;</span> Need Extra Credits?
+          </h2>
+          <p className="text-emerald-400 text-lg font-mono">
+            // Purchase credit packs to supplement your plan
           </p>
         </div>
 
@@ -313,82 +464,97 @@ const PricingPage = () => {
           {creditPacks.map((pack) => (
             <div
               key={pack.id}
-              className={`bg-white rounded-xl p-8 shadow-lg ${
-                pack.popular ? "ring-2 ring-purple-600 relative" : ""
+              className={`bg-slate-900/70 backdrop-blur-sm border-2 rounded-lg p-8 transition-all duration-300 transform hover:-translate-y-2 relative ${
+                pack.popular
+                  ? "border-cyan-400 shadow-2xl shadow-cyan-400/30"
+                  : "border-cyan-400/30 hover:border-cyan-400 hover:shadow-lg hover:shadow-cyan-400/30"
               }`}
             >
               {pack.popular && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-purple-600 text-white px-4 py-1 rounded-full text-xs font-bold">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-cyan-400 text-black px-4 py-1 rounded text-xs font-bold font-mono">
                   BEST VALUE
                 </div>
               )}
 
               <div className="text-center mb-6">
                 <CreditCard
-                  className="mx-auto mb-4 text-purple-600"
+                  className="mx-auto mb-4 text-cyan-400"
                   size={48}
                 />
-                <h3 className="text-2xl font-bold mb-2">{pack.name}</h3>
-                <p className="text-gray-600 text-sm mb-4">{pack.description}</p>
-                <div className="text-4xl font-bold text-purple-600">
+                <h3 className="text-2xl font-bold mb-2 text-cyan-400 font-mono">{pack.name}</h3>
+                <p className="text-emerald-400 text-sm mb-4 font-mono">// {pack.description}</p>
+                <div className="text-4xl font-bold text-white font-mono">
                   {pack.price}
                 </div>
               </div>
 
-              <button
-                onClick={() => handleCreditPack(pack.id)}
-                disabled={!isAuthenticated}
-                className="w-full py-3 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition disabled:bg-gray-300 disabled:cursor-not-allowed"
-              >
-                {!isAuthenticated ? "Sign Up to Purchase" : "Buy Now"}
-              </button>
+              {!isAuthenticated ? (
+                <Link
+                  to="/register"
+                  className="block w-full text-center py-3 bg-cyan-400 text-black rounded font-semibold font-mono hover:bg-cyan-300 transition-all hover:shadow-lg hover:shadow-cyan-400/50"
+                >
+                  $ Sign Up to Purchase
+                </Link>
+              ) : (
+                <button
+                  onClick={() => handleCreditPack(pack.id)}
+                  className="w-full py-3 bg-cyan-400 text-black rounded font-semibold font-mono hover:bg-cyan-300 transition-all hover:shadow-lg hover:shadow-cyan-400/50"
+                >
+                  $ Buy Now
+                </button>
+              )}
             </div>
           ))}
         </div>
       </div>
 
       {/* FAQ Section */}
-      <div className="max-w-4xl mx-auto px-6 py-20">
-        <h2 className="text-3xl font-bold text-center mb-12">
-          Frequently Asked Questions
-        </h2>
+      <div className="max-w-4xl mx-auto px-6 py-20 relative z-10">
+        <div className="text-center mb-12">
+          <div className="inline-block mb-4 px-4 py-2 bg-cyan-400/10 border border-cyan-400/30 rounded text-cyan-400 font-mono text-sm">
+            $ cat faq.md
+          </div>
+          <h2 className="text-3xl font-bold text-white font-mono">
+            <span className="text-cyan-400">&gt;</span> Frequently Asked Questions
+          </h2>
+        </div>
 
         <div className="space-y-6">
-          <div className="bg-white rounded-xl p-6 shadow-sm">
-            <h3 className="text-lg font-bold mb-2">
-              Can I upgrade or downgrade my plan?
+          <div className="bg-slate-900/70 backdrop-blur-sm border-2 border-cyan-400/30 rounded-lg p-6 hover:border-cyan-400 transition-all">
+            <h3 className="text-lg font-bold mb-2 text-cyan-400 font-mono">
+              // Can I upgrade or downgrade my plan?
             </h3>
-            <p className="text-gray-600">
+            <p className="text-emerald-400 font-mono text-sm">
               Yes! You can change your plan at any time from your dashboard.
               Changes take effect immediately.
             </p>
           </div>
 
-          <div className="bg-white rounded-xl p-6 shadow-sm">
-            <h3 className="text-lg font-bold mb-2">
-              What payment methods do you accept?
+          <div className="bg-slate-900/70 backdrop-blur-sm border-2 border-cyan-400/30 rounded-lg p-6 hover:border-cyan-400 transition-all">
+            <h3 className="text-lg font-bold mb-2 text-cyan-400 font-mono">
+              // What payment methods do you accept?
             </h3>
-            <p className="text-gray-600">
+            <p className="text-emerald-400 font-mono text-sm">
               We accept all major credit cards through PayPal. You don't need a
               PayPal account to pay.
             </p>
           </div>
 
-          <div className="bg-white rounded-xl p-6 shadow-sm">
-            <h3 className="text-lg font-bold mb-2">
-              Do unused credits roll over?
+          <div className="bg-slate-900/70 backdrop-blur-sm border-2 border-cyan-400/30 rounded-lg p-6 hover:border-cyan-400 transition-all">
+            <h3 className="text-lg font-bold mb-2 text-cyan-400 font-mono">
+              // Do unused credits roll over?
             </h3>
-            <p className="text-gray-600">
+            <p className="text-emerald-400 font-mono text-sm">
               Subscription credits reset monthly. Credit packs never expire and
               can be used anytime.
             </p>
           </div>
 
-          <div className="bg-white rounded-xl p-6 shadow-sm">
-            <h3 className="text-lg font-bold mb-2">
-              What happens if I cancel?
+          <div className="bg-slate-900/70 backdrop-blur-sm border-2 border-cyan-400/30 rounded-lg p-6 hover:border-cyan-400 transition-all">
+            <h3 className="text-lg font-bold mb-2 text-cyan-400 font-mono">
+              // What happens if I cancel?
             </h3>
-            <p className="text-gray-600">
+            <p className="text-emerald-400 font-mono text-sm">
               Your subscription will remain active until the end of the billing
               period. You can still use all features until then.
             </p>
@@ -397,20 +563,88 @@ const PricingPage = () => {
       </div>
 
       {/* CTA Section */}
-      <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white py-20">
+      <div className="bg-gradient-to-r from-cyan-400/20 via-purple-400/20 to-cyan-400/20 border-y-2 border-cyan-400/50 text-white py-20 relative z-10">
         <div className="max-w-4xl mx-auto px-6 text-center">
-          <h2 className="text-4xl font-bold mb-4">Ready to get started?</h2>
-          <p className="text-xl mb-8 opacity-90">
-            Join thousands of developers building with AI
+          <h2 className="text-4xl md:text-5xl font-bold mb-4 font-mono">
+            <span className="text-cyan-400">&gt;</span> Ready to deploy?
+          </h2>
+          <p className="text-xl mb-8 text-emerald-400 font-mono">
+            // Join thousands of developers building with AI
           </p>
           <Link
             to="/register"
-            className="inline-block bg-white text-purple-600 px-8 py-4 rounded-lg font-semibold hover:bg-purple-50 transition"
+            className="inline-block bg-cyan-400 text-black px-12 py-4 rounded font-bold font-mono text-lg hover:bg-cyan-300 transition-all hover:shadow-2xl hover:shadow-cyan-400/50 border-2 border-cyan-400"
           >
-            Start Building for Free
+            <Terminal className="inline mr-2" size={20} />
+            $ git init --free
           </Link>
         </div>
       </div>
+
+      {/* Footer */}
+      <footer className="bg-slate-900 border-t border-cyan-400/30 text-white py-12 relative z-10">
+        <div className="max-w-7xl mx-auto px-6 text-center">
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <Terminal
+              size={24}
+              className="text-cyan-400 animate-pulse-slow"
+            />
+            <span className="text-xl font-bold font-mono text-cyan-400">
+              {"<AI_Builder />"}
+            </span>
+          </div>
+          <p className="text-emerald-400 font-mono text-sm">
+            © 2025 AI Builder • Built with GPT-4 and React
+          </p>
+          <p className="text-cyan-400/50 font-mono text-xs mt-2">
+            // Powered by artificial intelligence
+          </p>
+        </div>
+      </footer>
+
+      <style jsx>{`
+        @keyframes tetris-fall {
+          from {
+            transform: translateY(-100px) rotate(0deg);
+            opacity: 0;
+          }
+          to {
+            transform: translateY(100vh) rotate(360deg);
+            opacity: 1;
+          }
+        }
+
+        @keyframes scanline {
+          0% {
+            transform: translateY(-100%);
+          }
+          100% {
+            transform: translateY(100%);
+          }
+        }
+
+        .animate-tetris-fall {
+          animation: tetris-fall linear infinite;
+        }
+
+        .animate-scanline {
+          animation: scanline 8s linear infinite;
+        }
+
+        .animate-pulse-slow {
+          animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes pulse {
+          0%,
+          100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.5;
+          }
+        }
+      `}</style>
     </div>
   );
 };

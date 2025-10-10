@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Sparkles, Mail, Lock, User } from "lucide-react";
+import { Terminal, Mail, Lock, User } from "lucide-react";
 import { useAuthStore } from "../store/useAuthStore";
 
 const RegisterPage = () => {
@@ -64,33 +64,45 @@ const RegisterPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-600 via-blue-600 to-indigo-700 flex items-center justify-center p-6">
-      <div className="max-w-md w-full">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black relative overflow-hidden flex items-center justify-center p-6">
+      {/* Grid Pattern Overlay */}
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(99,102,241,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(99,102,241,0.03)_1px,transparent_1px)] bg-[size:50px_50px] pointer-events-none"></div>
+
+      {/* Scanline effect */}
+      <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-transparent via-cyan-400/5 to-transparent animate-scanline"></div>
+
+      <div className="max-w-md w-full relative z-10">
         {/* Logo */}
         <Link
           to="/"
-          className="flex items-center justify-center gap-2 text-white text-3xl font-bold mb-8"
+          className="flex items-center justify-center gap-3 text-cyan-400 text-3xl font-mono font-bold mb-8 group"
         >
-          <Sparkles size={36} />
-          <span>AI Builder</span>
+          <Terminal size={36} className="animate-pulse-slow" />
+          <span className="bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent group-hover:from-cyan-300 group-hover:via-purple-300 group-hover:to-pink-300 transition-all">
+            {"<AI_Builder />"}
+          </span>
         </Link>
 
         {/* Card */}
-        <div className="bg-white rounded-2xl shadow-2xl p-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Create account
-          </h1>
-          <p className="text-gray-600 mb-8">Start building with AI today</p>
+        <div className="bg-slate-900/70 backdrop-blur-sm border-2 border-cyan-400/50 rounded-lg p-8 shadow-2xl shadow-cyan-400/20">
+          <div className="mb-6">
+            <h1 className="text-3xl font-bold font-mono text-white mb-2">
+              <span className="text-cyan-400">$</span> npm init
+            </h1>
+            <p className="text-emerald-400 font-mono text-sm">
+              // Create your developer account
+            </p>
+          </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Name */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Full Name
+              <label className="block text-sm font-medium font-mono text-emerald-400 mb-2">
+                --name
               </label>
               <div className="relative">
                 <User
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-cyan-400"
                   size={20}
                 />
                 <input
@@ -98,26 +110,28 @@ const RegisterPage = () => {
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
-                  className={`w-full pl-10 pr-4 py-3 border ${
-                    errors.name ? "border-red-500" : "border-gray-300"
-                  } rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent`}
+                  className={`w-full pl-10 pr-4 py-3 bg-black/50 border-2 ${
+                    errors.name ? "border-red-500" : "border-cyan-400/30"
+                  } rounded font-mono text-white placeholder-emerald-400/50 focus:outline-none focus:border-cyan-400 transition-colors`}
                   placeholder="John Doe"
                   required
                 />
               </div>
               {errors.name && (
-                <p className="mt-1 text-sm text-red-500">{errors.name}</p>
+                <p className="mt-1 text-sm text-red-500 font-mono">
+                  // {errors.name}
+                </p>
               )}
             </div>
 
             {/* Email */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Email
+              <label className="block text-sm font-medium font-mono text-emerald-400 mb-2">
+                --email
               </label>
               <div className="relative">
                 <Mail
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-cyan-400"
                   size={20}
                 />
                 <input
@@ -125,8 +139,8 @@ const RegisterPage = () => {
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  placeholder="you@example.com"
+                  className="w-full pl-10 pr-4 py-3 bg-black/50 border-2 border-cyan-400/30 rounded font-mono text-white placeholder-emerald-400/50 focus:outline-none focus:border-cyan-400 transition-colors"
+                  placeholder="user@domain.com"
                   required
                 />
               </div>
@@ -134,12 +148,12 @@ const RegisterPage = () => {
 
             {/* Password */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Password
+              <label className="block text-sm font-medium font-mono text-emerald-400 mb-2">
+                --password
               </label>
               <div className="relative">
                 <Lock
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-cyan-400"
                   size={20}
                 />
                 <input
@@ -147,26 +161,28 @@ const RegisterPage = () => {
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  className={`w-full pl-10 pr-4 py-3 border ${
-                    errors.password ? "border-red-500" : "border-gray-300"
-                  } rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent`}
+                  className={`w-full pl-10 pr-4 py-3 bg-black/50 border-2 ${
+                    errors.password ? "border-red-500" : "border-cyan-400/30"
+                  } rounded font-mono text-white placeholder-emerald-400/50 focus:outline-none focus:border-cyan-400 transition-colors`}
                   placeholder="••••••••"
                   required
                 />
               </div>
               {errors.password && (
-                <p className="mt-1 text-sm text-red-500">{errors.password}</p>
+                <p className="mt-1 text-sm text-red-500 font-mono">
+                  // {errors.password}
+                </p>
               )}
             </div>
 
             {/* Confirm Password */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Confirm Password
+              <label className="block text-sm font-medium font-mono text-emerald-400 mb-2">
+                --confirm-password
               </label>
               <div className="relative">
                 <Lock
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-cyan-400"
                   size={20}
                 />
                 <input
@@ -174,18 +190,18 @@ const RegisterPage = () => {
                   name="confirmPassword"
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  className={`w-full pl-10 pr-4 py-3 border ${
+                  className={`w-full pl-10 pr-4 py-3 bg-black/50 border-2 ${
                     errors.confirmPassword
                       ? "border-red-500"
-                      : "border-gray-300"
-                  } rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent`}
+                      : "border-cyan-400/30"
+                  } rounded font-mono text-white placeholder-emerald-400/50 focus:outline-none focus:border-cyan-400 transition-colors`}
                   placeholder="••••••••"
                   required
                 />
               </div>
               {errors.confirmPassword && (
-                <p className="mt-1 text-sm text-red-500">
-                  {errors.confirmPassword}
+                <p className="mt-1 text-sm text-red-500 font-mono">
+                  // {errors.confirmPassword}
                 </p>
               )}
             </div>
@@ -194,20 +210,20 @@ const RegisterPage = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-purple-600 text-white py-3 rounded-lg font-semibold hover:bg-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 text-white py-3 rounded font-bold font-mono hover:from-cyan-400 hover:to-blue-400 transition-all hover:shadow-lg hover:shadow-cyan-400/50 border-2 border-cyan-400 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? "Creating account..." : "Create Account"}
+              {isLoading ? "$ creating..." : "$ npm install"}
             </button>
           </form>
 
           {/* Login link */}
-          <p className="mt-6 text-center text-gray-600">
-            Already have an account?{" "}
+          <p className="mt-6 text-center text-emerald-400 font-mono text-sm">
+            // Already have an account?{" "}
             <Link
               to="/login"
-              className="text-purple-600 font-semibold hover:text-purple-700"
+              className="text-cyan-400 font-semibold hover:text-purple-400 hover:underline"
             >
-              Login
+              ./login
             </Link>
           </p>
         </div>
@@ -215,11 +231,40 @@ const RegisterPage = () => {
         {/* Back to home */}
         <Link
           to="/"
-          className="block text-center text-white mt-6 hover:text-purple-200 transition"
+          className="block text-center text-emerald-400 font-mono mt-6 hover:text-cyan-400 transition-colors"
         >
-          ← Back to home
+          {"<- cd ../home"}
         </Link>
       </div>
+
+      <style jsx>{`
+        @keyframes scanline {
+          0% {
+            transform: translateY(-100%);
+          }
+          100% {
+            transform: translateY(100%);
+          }
+        }
+
+        .animate-scanline {
+          animation: scanline 8s linear infinite;
+        }
+
+        .animate-pulse-slow {
+          animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes pulse {
+          0%,
+          100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.5;
+          }
+        }
+      `}</style>
     </div>
   );
 };

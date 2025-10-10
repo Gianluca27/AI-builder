@@ -91,6 +91,20 @@ export const aiAPI = {
     const response = await api.get("/ai/credits");
     return response.data;
   },
+
+  // Transcribe audio to text
+  transcribe: async (audioBlob, language = "es") => {
+    const formData = new FormData();
+    formData.append("audio", audioBlob, "recording.webm");
+    formData.append("language", language);
+
+    const response = await api.post("/ai/transcribe", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+    return response.data;
+  },
 };
 
 // ==========================================
@@ -146,6 +160,48 @@ export const templatesAPI = {
 
   getById: async (id) => {
     const response = await api.get(`/templates/${id}`);
+    return response.data;
+  },
+};
+
+// ==========================================
+// GITHUB API
+// ==========================================
+
+export const githubAPI = {
+  // Initiate GitHub OAuth
+  initiateAuth: async () => {
+    const response = await api.get("/github/auth");
+    return response.data;
+  },
+
+  // List user's repositories
+  listRepos: async (githubToken) => {
+    const response = await api.post("/github/repos", { githubToken });
+    return response.data;
+  },
+
+  // Read repository content
+  readRepo: async (repoFullName, githubToken) => {
+    const response = await api.post("/github/read-repo", { repoFullName, githubToken });
+    return response.data;
+  },
+
+  // Create a new repository
+  createRepo: async (data) => {
+    const response = await api.post("/github/create-repo", data);
+    return response.data;
+  },
+
+  // Update existing repository
+  updateRepo: async (data) => {
+    const response = await api.post("/github/update-repo", data);
+    return response.data;
+  },
+
+  // Disconnect GitHub account
+  disconnect: async () => {
+    const response = await api.post("/github/disconnect");
     return response.data;
   },
 };

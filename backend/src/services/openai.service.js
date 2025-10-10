@@ -15,9 +15,6 @@ const openai = new OpenAI({
 
 console.log("✅ OpenAI inicializado correctamente");
 
-/**
- * Genera código HTML/CSS/JS usando GPT-3.5/GPT-5
- */
 export const generateWebsiteCode = async (prompt, options = {}) => {
   const {
     type = "custom",
@@ -51,7 +48,7 @@ Return ONLY valid HTML code, nothing else. No explanations, no markdown code blo
 
   try {
     const completion = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo", // 💡 Cambiar a "gpt-5-turbo" cuando tengas créditos
+      model: "gpt-5-nano",
       messages: [
         {
           role: "system",
@@ -110,7 +107,7 @@ Return ONLY the improved HTML code, nothing else.`;
 
   try {
     const completion = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
+      model: "gpt-5-nano",
       messages: [
         {
           role: "system",
@@ -152,7 +149,7 @@ Return as JSON object with keys: colors, fonts, layout, features`;
 
   try {
     const completion = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
+      model: "gpt-5-nano",
       messages: [
         {
           role: "system",

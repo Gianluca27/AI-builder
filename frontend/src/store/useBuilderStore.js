@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { aiAPI, projectsAPI } from "../services/api";
+import { aiAPI, projectsAPI, templatesAPI } from "../services/api";
 import toast from "react-hot-toast";
 
 export const useBuilderStore = create((set, get) => ({

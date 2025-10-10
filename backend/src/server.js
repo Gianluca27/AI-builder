@@ -11,6 +11,7 @@ import projectRoutes from "./routes/project.routes.js";
 import aiRoutes from "./routes/ai.routes.js";
 import templateRoutes from "./routes/template.routes.js";
 import billingRoutes from "./routes/billing.routes.js";
+import githubRoutes from "./routes/github.routes.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 
 dotenv.config();
@@ -66,7 +67,8 @@ app.use("/api/auth", authRoutes);
 app.use("/api/projects", projectRoutes);
 app.use("/api/ai", aiRoutes);
 app.use("/api/templates", templateRoutes);
-app.use("/api/billing", billingRoutes); // ⭐ AGREGAR ESTA LÍNEA
+app.use("/api/billing", billingRoutes);
+app.use("/api/github", githubRoutes);
 
 app.use(errorHandler);
 
